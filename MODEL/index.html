@@ -3,842 +3,398 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TruthScan — Fake News Detector</title>
-  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Rye&display=swap" rel="stylesheet"/>
+  <title>FakeXpose</title>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --paper: #f2e8c9;
-      --paper-dark: #e8d9a8;
-      --paper-aged: #d4c48a;
-      --ink: #1a1208;
-      --ink-faded: #3d2e12;
-      --ink-light: #6b5230;
-      --red-stamp: #8b1a0a;
-      --green-stamp: #1a4d2e;
-      --border: #a89060;
-      --shadow: rgba(26,18,8,0.15);
+      --paper: #f0e6c8;
+      --ink:   #1a1208;
+      --faded: #6b5230;
+      --border:#a89060;
+      --red:   #8b1a0a;
+      --green: #1a4d2e;
+      --amber: #b8860b;
     }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#c4b07a; font-family:'Courier Prime',monospace; min-height:100vh; padding:40px 20px 80px; }
+    .paper { max-width:780px; margin:0 auto; background:var(--paper); box-shadow:0 4px 12px rgba(0,0,0,0.2),0 20px 50px rgba(0,0,0,0.15); border:1px solid #b8a070; }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      background: #c8b882;
-      background-image:
-        radial-gradient(ellipse at 20% 50%, #b8a870 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 20%, #d4c488 0%, transparent 50%);
-      font-family: 'Courier Prime', 'Courier New', monospace;
-      min-height: 100vh;
-      padding: 30px 20px 60px;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .newspaper {
-      position: relative;
-      z-index: 1;
-      max-width: 860px;
-      margin: 0 auto;
-      background: var(--paper);
-      box-shadow:
-        0 2px 4px var(--shadow),
-        0 8px 24px rgba(26,18,8,0.25),
-        0 20px 60px rgba(26,18,8,0.2),
-        inset 0 0 80px rgba(168,144,96,0.1);
-      border: 1px solid var(--paper-aged);
-    }
-
-    /* HEADER */
-    .header {
-      padding: 20px 40px 0;
-      border-bottom: 4px double var(--ink);
-    }
-
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 12px;
-      font-size: 9px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-    }
-
-    .edition-box {
-      border: 1px solid var(--border);
-      padding: 3px 10px;
-      font-size: 9px;
-    }
-
-    .masthead-wrap { text-align: center; padding-bottom: 14px; }
-
-    .paper-name {
-      font-family: 'Special Elite', cursive;
-      font-size: clamp(2.6rem, 7vw, 5.2rem);
-      color: var(--ink);
-      letter-spacing: 0.04em;
-      line-height: 1;
-      text-shadow: 2px 2px 0 rgba(26,18,8,0.08);
-    }
-
-    .paper-subtitle {
-      font-size: 10px;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      margin-top: 8px;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 5px 0;
-      display: block;
-      width: 100%;
-      text-align: center;
-    }
-
-    .header-stats {
-      display: flex;
-      justify-content: center;
-      padding-top: 10px;
-    }
-
-    .hstat {
-      padding: 4px 20px;
-      border-right: 1px solid var(--border);
-      font-size: 9px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-    }
-    .hstat:last-child { border-right: none; }
-    .hstat strong { color: var(--ink); }
+    /* MASTHEAD */
+    .masthead { text-align:center; padding:28px 40px 18px; border-bottom:3px double var(--ink); }
+    .mast-top { display:flex; justify-content:space-between; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--faded); margin-bottom:14px; }
+    .paper-name { font-family:'Special Elite',cursive; font-size:clamp(3.2rem,10vw,6rem); color:var(--ink); line-height:1; letter-spacing:.04em; }
+    .paper-rule { border:none; border-top:1px solid var(--border); margin:10px 0 6px; }
+    .paper-sub { font-size:9px; letter-spacing:.24em; text-transform:uppercase; color:var(--faded); }
 
     /* TICKER */
-    .ticker-strip {
-      background: var(--ink);
-      color: var(--paper);
-      overflow: hidden;
-      padding: 7px 0;
-    }
+    .ticker { background:var(--ink); overflow:hidden; padding:6px 0; }
+    .ticker-inner { display:flex; white-space:nowrap; animation:ticker 25s linear infinite; }
+    .t-item { font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:rgba(240,230,200,.8); padding:0 36px; }
+    .t-dot { color:var(--amber); margin:0 4px; }
+    @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
-    .ticker-track {
-      display: flex;
-      animation: scroll 28s linear infinite;
-      white-space: nowrap;
-    }
-
-    .tick {
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      padding: 0 32px;
-      opacity: 0.85;
-    }
-
-    .tick-sep { color: var(--paper-aged); margin: 0 4px; }
-
-    @keyframes scroll {
-      from { transform: translateX(0); }
-      to { transform: translateX(-50%); }
-    }
-
-    /* CONTENT */
-    .content {
-      display: grid;
-      grid-template-columns: 1fr 255px;
-      gap: 0;
-      padding: 32px 40px 40px;
-    }
-
-    .main-col { padding-right: 30px; border-right: 1px solid var(--border); }
-    .side-col { padding-left: 26px; }
-
-    .col-rule {
-      font-size: 8.5px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      border-top: 2px solid var(--ink);
-      padding-top: 8px;
-      margin-bottom: 16px;
-    }
-
-    .article-hed {
-      font-family: 'Special Elite', cursive;
-      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
-      line-height: 1.15;
-      color: var(--ink);
-      margin-bottom: 8px;
-    }
-
-    .article-deck {
-      font-size: 12px;
-      color: var(--ink-light);
-      font-style: italic;
-      margin-bottom: 20px;
-      line-height: 1.5;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 14px;
-    }
+    /* BODY */
+    .body { padding:32px 40px 40px; }
+    .section-rule { font-size:8px; letter-spacing:.24em; text-transform:uppercase; color:var(--faded); border-top:2px solid var(--ink); padding-top:7px; margin-bottom:18px; }
+    .search-hed { font-family:'Special Elite',cursive; font-size:clamp(1.3rem,3vw,1.9rem); color:var(--ink); margin-bottom:6px; line-height:1.2; }
+    .search-deck { font-size:12px; font-style:italic; color:var(--faded); margin-bottom:22px; line-height:1.5; }
 
     /* TABS */
-    .tabs {
-      display: flex;
-      margin-bottom: 14px;
-      border-bottom: 1px solid var(--ink);
-    }
+    .tabs { display:flex; border-bottom:1px solid var(--ink); margin-bottom:14px; }
+    .tab-btn { background:none; border:none; font-family:'Courier Prime',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; padding:7px 18px; cursor:pointer; color:var(--faded); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; }
+    .tab-btn.active { color:var(--ink); border-bottom-color:var(--ink); font-weight:700; }
+    .tab-content { display:none; } .tab-content.active { display:block; }
 
-    .tab-btn {
-      background: none;
-      border: none;
-      font-family: 'Courier Prime', monospace;
-      font-size: 10px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      padding: 8px 18px;
-      cursor: pointer;
-      color: var(--ink-light);
-      border-bottom: 3px solid transparent;
-      margin-bottom: -1px;
-      transition: all 0.15s;
-    }
+    textarea, input[type="url"] { width:100%; background:#fdf8ec; border:1px solid var(--border); color:var(--ink); font-family:'Courier Prime',monospace; font-size:13px; padding:13px 15px; outline:none; line-height:1.6; transition:border-color .2s; }
+    textarea { min-height:140px; resize:vertical; }
+    textarea:focus, input[type="url"]:focus { border-color:var(--ink); }
+    textarea::placeholder, input::placeholder { color:#b8a070; font-style:italic; }
 
-    .tab-btn.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+    .submit-btn { width:100%; background:var(--ink); color:var(--paper); border:none; font-family:'Special Elite',cursive; font-size:15px; letter-spacing:.1em; text-transform:uppercase; padding:13px; cursor:pointer; margin-top:10px; transition:background .2s; }
+    .submit-btn:hover { background:#3d2e12; }
+    .submit-btn:disabled { opacity:.5; cursor:not-allowed; }
 
-    textarea, input[type="url"] {
-      width: 100%;
-      background: #fdf6e0;
-      border: 1.5px solid var(--border);
-      color: var(--ink);
-      font-family: 'Courier Prime', monospace;
-      font-size: 13px;
-      padding: 14px 16px;
-      outline: none;
-      transition: border-color 0.2s;
-      line-height: 1.6;
-      box-shadow: inset 1px 1px 4px rgba(168,144,96,0.2);
-    }
+    .loading { display:none; text-align:center; padding:22px 0; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--faded); }
+    .dots::after { content:''; animation:dots 1.4s infinite; }
+    @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} 100%{content:''} }
 
-    textarea { min-height: 160px; resize: vertical; }
-    textarea:focus, input[type="url"]:focus { border-color: var(--ink); }
-    textarea::placeholder, input::placeholder { color: #b8a070; font-style: italic; }
-
-    .analyze-btn {
-      width: 100%;
-      background: var(--ink);
-      color: var(--paper);
-      border: none;
-      font-family: 'Special Elite', cursive;
-      font-size: 15px;
-      letter-spacing: 0.12em;
-      padding: 14px 28px;
-      cursor: pointer;
-      margin-top: 12px;
-      transition: all 0.2s;
-      text-transform: uppercase;
-      position: relative;
-    }
-
-    .analyze-btn::before {
-      content: '';
-      position: absolute;
-      inset: 2px;
-      border: 1px solid rgba(242,232,201,0.15);
-      pointer-events: none;
-    }
-
-    .analyze-btn:hover { background: var(--ink-faded); }
-    .analyze-btn:active { transform: scale(0.99); }
-    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .error-msg {
-      display: none;
-      border-left: 3px solid var(--red-stamp);
-      padding: 10px 14px;
-      font-size: 11px;
-      color: var(--red-stamp);
-      margin-top: 12px;
-      background: rgba(139,26,10,0.05);
-      font-style: italic;
-    }
-
-    /* LOADING */
-    .loading {
-      display: none;
-      padding: 30px 0;
-      text-align: center;
-    }
-
-    .loading-text {
-      font-size: 11px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-    }
-
-    .dots::after {
-      content: '';
-      animation: dots 1.5s infinite;
-    }
-
-    @keyframes dots {
-      0%   { content: '.'; }
-      33%  { content: '..'; }
-      66%  { content: '...'; }
-      100% { content: ''; }
-    }
-
-    .type-line {
-      width: 80%;
-      height: 1px;
-      background: var(--border);
-      margin: 14px auto 0;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .type-line::after {
-      content: '';
-      position: absolute;
-      left: -30%;
-      width: 30%;
-      height: 100%;
-      background: var(--ink);
-      animation: tslide 1.2s ease-in-out infinite;
-    }
-
-    @keyframes tslide {
-      from { left: -30%; }
-      to { left: 130%; }
-    }
+    .error-box { display:none; border-left:3px solid var(--red); padding:10px 14px; font-size:11px; color:var(--red); font-style:italic; margin-top:10px; background:rgba(139,26,10,.04); }
 
     /* RESULT */
-    .result-card {
-      display: none;
-      margin-top: 24px;
-      animation: fadeUp 0.4s ease;
-    }
+    .result { display:none; margin-top:22px; animation:up .35s ease; }
+    @keyframes up { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    .verdict-row { display:flex; align-items:center; justify-content:space-between; border:1px solid var(--border); padding:18px 22px; background:#fdf8ec; }
+    .stamp { width:88px; height:88px; border:4px solid; display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-6deg); flex-shrink:0; position:relative; }
+    .stamp::before { content:''; position:absolute; inset:3px; border:1px solid currentColor; opacity:.3; }
+    .stamp.fake { color:var(--red); border-color:var(--red); }
+    .stamp.real { color:var(--green); border-color:var(--green); }
+    .stamp-word { font-family:'Special Elite',cursive; font-size:1.35rem; text-transform:uppercase; line-height:1; }
+    .stamp-sub { font-size:7.5px; letter-spacing:.12em; text-transform:uppercase; margin-top:3px; opacity:.7; }
+    .verdict-info { flex:1; padding:0 22px; }
+    .verdict-pct { font-family:'Special Elite',cursive; font-size:2.2rem; color:var(--ink); line-height:1; }
+    .verdict-label { font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--faded); margin-bottom:6px; }
+    .verdict-desc { font-size:11px; font-style:italic; color:var(--faded); line-height:1.5; }
 
-    .stamp-wrap {
-      display: flex;
-      align-items: flex-start;
-      gap: 20px;
-      border: 1.5px solid var(--border);
-      padding: 20px;
-      background: #fdf6e0;
-    }
+    .bars { border:1px solid var(--border); border-top:none; padding:14px 22px; }
+    .bar-row { margin-bottom:10px; } .bar-row:last-child { margin-bottom:0; }
+    .bar-label { display:flex; justify-content:space-between; font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--faded); margin-bottom:5px; }
+    .bar-label span:last-child { color:var(--ink); font-weight:700; }
+    .bar-track { height:4px; background:#e0d4b0; border:1px solid var(--border); overflow:hidden; }
+    .bar-fill { height:100%; transition:width .9s cubic-bezier(.22,1,.36,1); }
+    .bar-fill.fake { background:var(--red); } .bar-fill.real { background:var(--green); }
 
-    .stamp {
-      flex-shrink: 0;
-      width: 108px;
-      height: 108px;
-      border: 4px solid;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transform: rotate(-7deg);
-      opacity: 0.9;
-      position: relative;
-    }
+    .rt-box { border:1px solid var(--border); border-top:none; }
+    .rt-head { background:var(--ink); color:var(--paper); font-family:'Special Elite',cursive; font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:7px 22px; display:flex; justify-content:space-between; align-items:center; }
+    .rt-tag { font-family:'Courier Prime',monospace; font-size:9px; letter-spacing:.1em; border:1px solid rgba(240,230,200,.3); padding:1px 7px; color:rgba(240,230,200,.7); }
+    .rt-tag.found { border-color:#5d9; color:#5d9; }
+    .rt-tag.warn  { border-color:goldenrod; color:goldenrod; }
+    .rt-tag.bad   { border-color:#e77; color:#e77; }
+    .rt-body { padding:14px 22px; }
+    .rt-verdict { font-size:12px; color:var(--ink); margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed var(--border); }
+    .rt-verdict strong { display:block; margin-bottom:2px; letter-spacing:.04em; }
+    .rt-verdict.found strong { color:var(--green); }
+    .rt-verdict.warn  strong { color:var(--amber); }
+    .rt-verdict.bad   strong { color:var(--red); }
+    .rt-verdict span { font-size:10px; font-style:italic; color:var(--faded); }
+    .src-label { font-size:8px; letter-spacing:.18em; text-transform:uppercase; color:var(--faded); margin-bottom:8px; }
+    .src-item { border-left:2px solid var(--green); padding:5px 10px; margin-bottom:6px; }
+    .src-title { font-size:11px; color:var(--ink); line-height:1.4; }
+    .src-url { font-size:9px; color:var(--faded); font-style:italic; }
+    .src-empty { font-size:11px; font-style:italic; color:var(--faded); }
 
-    .stamp.fake { border-color: var(--red-stamp); color: var(--red-stamp); }
-    .stamp.real { border-color: var(--green-stamp); color: var(--green-stamp); }
+    .divider { border:none; border-top:3px double var(--ink); margin:36px 0 0; }
 
-    .stamp::before {
-      content: '';
-      position: absolute;
-      inset: 3px;
-      border: 1px solid currentColor;
-      opacity: 0.35;
-    }
+    /* LATEST NEWS */
+    .latest { padding:28px 40px 40px; }
+    .latest-top { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; }
+    .latest-hed { font-family:'Special Elite',cursive; font-size:1.5rem; color:var(--ink); line-height:1; }
+    .latest-meta { text-align:right; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--faded); }
+    .refresh-btn { display:inline-block; margin-top:5px; background:var(--ink); color:var(--paper); border:none; font-family:'Courier Prime',monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase; padding:5px 12px; cursor:pointer; transition:background .2s; }
+    .refresh-btn:hover { background:var(--faded); }
+    .countdown { color:var(--amber); margin-top:4px; font-style:italic; }
 
-    .stamp-word {
-      font-family: 'Special Elite', cursive;
-      font-size: 1.55rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      line-height: 1;
-    }
+    .news-list { display:flex; flex-direction:column; }
+    .news-item { display:grid; grid-template-columns:70px 1fr auto; align-items:center; gap:16px; padding:13px 0; border-bottom:1px solid #ddd0aa; }
+    .news-item:last-child { border-bottom:none; }
+    .news-badge { font-family:'Special Elite',cursive; font-size:11px; text-transform:uppercase; text-align:center; padding:3px 6px; border:2px solid; line-height:1; }
+    .news-badge.fake { color:var(--red); border-color:var(--red); }
+    .news-badge.real { color:var(--green); border-color:var(--green); }
+    .news-headline { font-size:13px; color:var(--ink); line-height:1.45; font-weight:700; }
+    .news-source   { font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--faded); margin-top:3px; }
+    .news-right { text-align:right; }
+    .news-conf { font-family:'Special Elite',cursive; font-size:1.1rem; }
+    .news-conf.fake { color:var(--red); } .news-conf.real { color:var(--green); }
+    .news-conf-label { font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--faded); }
+    .news-link { display:block; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--amber); text-decoration:none; margin-top:3px; }
+    .news-link:hover { color:var(--ink); }
 
-    .stamp-sub {
-      font-size: 8px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      margin-top: 4px;
-      opacity: 0.75;
-    }
+    .news-loading { text-align:center; padding:30px; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--faded); }
+    .news-err { padding:20px; font-size:12px; font-style:italic; color:var(--red); border:1px solid var(--border); text-align:center; }
 
-    .stamp-detail { flex: 1; }
+    .footer { border-top:3px double var(--ink); padding:12px 40px; display:flex; justify-content:space-between; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--faded); }
 
-    .stamp-confidence {
-      font-family: 'Special Elite', cursive;
-      font-size: 2rem;
-      color: var(--ink);
-      line-height: 1;
-    }
-
-    .stamp-conf-label {
-      font-size: 9px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      margin-bottom: 12px;
-    }
-
-    .verdict-desc {
-      font-size: 11px;
-      color: var(--ink-light);
-      font-style: italic;
-      line-height: 1.5;
-    }
-
-    .prob-section {
-      border: 1.5px solid var(--border);
-      border-top: none;
-      padding: 16px 20px;
-      background: var(--paper);
-    }
-
-    .prob-row { margin-bottom: 14px; }
-    .prob-row:last-child { margin-bottom: 0; }
-
-    .prob-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      margin-bottom: 6px;
-    }
-
-    .prob-header span:last-child { color: var(--ink); font-weight: 700; }
-
-    .prob-track {
-      height: 5px;
-      background: var(--paper-dark);
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-
-    .prob-fill {
-      height: 100%;
-      transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .prob-fill.fake { background: var(--red-stamp); }
-    .prob-fill.real { background: var(--green-stamp); }
-
-    .scrape-box {
-      display: none;
-      border: 1.5px solid var(--border);
-      border-top: 1px dashed var(--border);
-      padding: 14px 20px;
-      background: var(--paper-dark);
-    }
-
-    .scrape-label {
-      font-size: 8px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      margin-bottom: 7px;
-    }
-
-    .scrape-text {
-      font-size: 11px;
-      font-style: italic;
-      color: var(--ink-light);
-      line-height: 1.6;
-    }
-
-    /* SIDEBAR */
-    .how-box {
-      border: 1px solid var(--border);
-      padding: 16px;
-      background: #fdf6e0;
-      margin-bottom: 22px;
-    }
-
-    .step {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 14px;
-      align-items: flex-start;
-    }
-    .step:last-child { margin-bottom: 0; }
-
-    .step-num {
-      font-family: 'Special Elite', cursive;
-      font-size: 1.3rem;
-      color: var(--red-stamp);
-      line-height: 1;
-      min-width: 20px;
-    }
-
-    .step-body strong {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      margin-bottom: 1px;
-      letter-spacing: 0.04em;
-    }
-
-    .step-body span {
-      font-size: 10px;
-      color: var(--ink-light);
-      font-style: italic;
-      line-height: 1.4;
-    }
-
-    .stats-box {
-      border: 2px solid var(--ink);
-      overflow: hidden;
-    }
-
-    .stats-title {
-      background: var(--ink);
-      color: var(--paper);
-      font-family: 'Special Elite', cursive;
-      font-size: 13px;
-      letter-spacing: 0.1em;
-      text-align: center;
-      padding: 8px;
-      text-transform: uppercase;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .stat-cell {
-      padding: 14px 8px;
-      text-align: center;
-      border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .stat-cell:nth-child(even) { border-right: none; }
-    .stat-cell:nth-child(3), .stat-cell:nth-child(4) { border-bottom: none; }
-
-    .stat-val {
-      font-family: 'Special Elite', cursive;
-      font-size: 1.5rem;
-      color: var(--ink);
-      line-height: 1;
-    }
-
-    .stat-lbl {
-      font-size: 8px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      margin-top: 3px;
-    }
-
-    .classified {
-      border: 1px solid var(--border);
-      padding: 14px 16px;
-      margin-top: 22px;
-      text-align: center;
-      background: var(--paper-dark);
-    }
-
-    .classified-title {
-      font-family: 'Rye', cursive;
-      font-size: 11px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--ink);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-      margin-bottom: 10px;
-    }
-
-    .classified p {
-      font-size: 10px;
-      color: var(--ink-light);
-      font-style: italic;
-      line-height: 1.6;
-    }
-
-    .footer {
-      border-top: 3px double var(--ink);
-      padding: 14px 40px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 9px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-    }
-
-    @media (max-width: 680px) {
-      .content { grid-template-columns: 1fr; }
-      .main-col { padding-right: 0; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 28px; margin-bottom: 28px; }
-      .side-col { padding-left: 0; }
-      .header { padding: 16px 20px 0; }
-      .content { padding: 24px 20px 32px; }
-      .footer { padding: 12px 20px; flex-direction: column; gap: 4px; text-align: center; }
-      .header-top { display: none; }
+    @media(max-width:600px){
+      .body,.latest{ padding:24px 20px 32px; }
+      .masthead{ padding:20px 20px 14px; }
+      .footer{ padding:12px 20px; flex-direction:column; gap:4px; }
+      .mast-top{ display:none; }
+      .news-item{ grid-template-columns:60px 1fr; }
+      .news-right{ display:none; }
     }
   </style>
 </head>
 <body>
-<div class="newspaper">
+<div class="paper">
 
-  <div class="header">
-    <div class="header-top">
-      <span>Est. 2024 &nbsp;·&nbsp; Vol. I &nbsp;·&nbsp; No. 1</span>
-      <div class="edition-box">Special ML Edition</div>
+  <div class="masthead">
+    <div class="mast-top">
+      <span>Est. 2024 &nbsp;·&nbsp; Vol. I</span>
       <span id="current-date"></span>
+      <span>ML Edition</span>
     </div>
-    <div class="masthead-wrap">
-      <div class="paper-name">The TruthScan Gazette</div>
-      <div class="paper-subtitle">All The News That's Fit To Verify &nbsp;·&nbsp; Powered by Machine Learning</div>
-    </div>
-    <div class="header-stats">
-      <div class="hstat">Accuracy <strong>99%</strong></div>
-      <div class="hstat">Articles Trained <strong>44,000+</strong></div>
-      <div class="hstat">Algorithm <strong>Log. Regression</strong></div>
-      <div class="hstat">Features <strong>TF-IDF</strong></div>
+    <div class="paper-name">FakeXpose</div>
+    <hr class="paper-rule"/>
+    <div class="paper-sub">Exposing Fake News Since 2024 &nbsp;·&nbsp; Powered by Machine Learning</div>
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-inner">
+      <span class="t-item">99% Accuracy <span class="t-dot">✦</span> ML + Real-Time Verification</span>
+      <span class="t-item">Live News Feed <span class="t-dot">✦</span> Auto-Refreshes Every 60s</span>
+      <span class="t-item">India + Global Headlines <span class="t-dot">✦</span> BBC · Reuters · NDTV · Al Jazeera</span>
+      <span class="t-item">99% Accuracy <span class="t-dot">✦</span> ML + Real-Time Verification</span>
+      <span class="t-item">Live News Feed <span class="t-dot">✦</span> Auto-Refreshes Every 60s</span>
+      <span class="t-item">India + Global Headlines <span class="t-dot">✦</span> BBC · Reuters · NDTV · Al Jazeera</span>
     </div>
   </div>
 
-  <div class="ticker-strip">
-    <div class="ticker-track">
-      <span class="tick">Breaking <span class="tick-sep">✦</span> AI Detects Fake News With 99% Accuracy</span>
-      <span class="tick">ML Model Trained on 44,000 Articles <span class="tick-sep">✦</span> NLP Preprocessing Pipeline Active</span>
-      <span class="tick">TF-IDF Vectorization <span class="tick-sep">✦</span> Logistic Regression Classifier</span>
-      <span class="tick">Submit Text Or URL For Instant Verdict <span class="tick-sep">✦</span> Results Rendered Forthwith</span>
-      <span class="tick">Breaking <span class="tick-sep">✦</span> AI Detects Fake News With 99% Accuracy</span>
-      <span class="tick">ML Model Trained on 44,000 Articles <span class="tick-sep">✦</span> NLP Preprocessing Pipeline Active</span>
-      <span class="tick">TF-IDF Vectorization <span class="tick-sep">✦</span> Logistic Regression Classifier</span>
-      <span class="tick">Submit Text Or URL For Instant Verdict <span class="tick-sep">✦</span> Results Rendered Forthwith</span>
+  <div class="body">
+    <div class="section-rule">Analysis Desk</div>
+    <div class="search-hed">Is This Headline True or Fabricated?</div>
+    <div class="search-deck">Paste any news article or headline. Our ML engine verifies it instantly.</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('text',this)">Paste Text</button>
+      <button class="tab-btn" onclick="switchTab('url',this)">Enter URL</button>
+    </div>
+
+    <div class="tab-content active" id="tab-text">
+      <textarea id="news-text" placeholder="Paste your news headline or article here..."></textarea>
+    </div>
+    <div class="tab-content" id="tab-url">
+      <input type="url" id="news-url" placeholder="https://example.com/news-article"/>
+    </div>
+
+    <button class="submit-btn" id="analyze-btn" onclick="analyze()">⚙ Analyse</button>
+    <div class="error-box" id="error-box"></div>
+    <div class="loading" id="loading">Consulting the engine<span class="dots"></span></div>
+
+    <div class="result" id="result">
+      <div class="verdict-row">
+        <div class="stamp" id="stamp">
+          <div class="stamp-word" id="stamp-word">—</div>
+          <div class="stamp-sub">News</div>
+        </div>
+        <div class="verdict-info">
+          <div class="verdict-label">ML Confidence</div>
+          <div class="verdict-pct" id="verdict-pct">—</div>
+          <div class="verdict-desc" id="verdict-desc"></div>
+        </div>
+      </div>
+      <div class="bars">
+        <div class="bar-row">
+          <div class="bar-label"><span>Fake Probability</span><span id="fake-pct">0%</span></div>
+          <div class="bar-track"><div class="bar-fill fake" id="fake-bar" style="width:0%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>Real Probability</span><span id="real-pct">0%</span></div>
+          <div class="bar-track"><div class="bar-fill real" id="real-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="rt-box">
+        <div class="rt-head">
+          Real-Time Verification
+          <span class="rt-tag" id="rt-tag">—</span>
+        </div>
+        <div class="rt-body">
+          <div class="rt-verdict" id="rt-verdict">
+            <strong id="rt-strong">—</strong>
+            <span id="rt-span">—</span>
+          </div>
+          <div class="src-label">Sources Found</div>
+          <div id="src-list"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="content">
-    <div class="main-col">
-      <div class="col-rule">Analysis Desk — Submit Dispatch For Verification</div>
-      <h1 class="article-hed">Is This Headline Gospel Truth<br/>Or Pure Fiction?</h1>
-      <p class="article-deck">Our mechanical intelligence shall examine the submitted article and render its verdict forthwith — complete with a confidence assessment fit for the front page.</p>
+  <hr class="divider"/>
 
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('text', this)">⌨ Paste Article Text</button>
-        <button class="tab-btn" onclick="switchTab('url', this)">⚓ Submit URL</button>
-      </div>
-
-      <div class="tab-content active" id="tab-text">
-        <textarea id="news-text" placeholder="Type or paste your news article here...&#10;&#10;&quot;Scientists Discover Moon Is Made Of Cheese, Congress Demands Full Investigation...&quot;"></textarea>
-      </div>
-      <div class="tab-content" id="tab-url">
-        <input type="url" id="news-url" placeholder="https://www.example.com/news-article"/>
-      </div>
-
-      <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
-        ⚙ Submit For Analysis
-      </button>
-
-      <div class="error-msg" id="error-msg"></div>
-
-      <div class="loading" id="loading">
-        <div class="loading-text">Consulting the analytical engine<span class="dots"></span></div>
-        <div class="type-line"></div>
-      </div>
-
-      <div class="result-card" id="result-card">
-        <div class="stamp-wrap">
-          <div class="stamp" id="stamp">
-            <div class="stamp-word" id="stamp-word">—</div>
-            <div class="stamp-sub">News</div>
-          </div>
-          <div class="stamp-detail">
-            <div class="stamp-confidence" id="confidence-num">—</div>
-            <div class="stamp-conf-label">Confidence Score</div>
-            <div class="verdict-desc" id="verdict-desc"></div>
-          </div>
-        </div>
-        <div class="prob-section">
-          <div class="prob-row">
-            <div class="prob-header">
-              <span>Probability: Fabricated</span>
-              <span id="fake-pct">0%</span>
-            </div>
-            <div class="prob-track">
-              <div class="prob-fill fake" id="fake-bar" style="width:0%"></div>
-            </div>
-          </div>
-          <div class="prob-row">
-            <div class="prob-header">
-              <span>Probability: Genuine</span>
-              <span id="real-pct">0%</span>
-            </div>
-            <div class="prob-track">
-              <div class="prob-fill real" id="real-bar" style="width:0%"></div>
-            </div>
-          </div>
-        </div>
-        <div class="scrape-box" id="scrape-box">
-          <div class="scrape-label">— Extracted Dispatch —</div>
-          <div class="scrape-text" id="scrape-text"></div>
-        </div>
+  <div class="latest">
+    <div class="section-rule">Live Wire — Latest News Analysis</div>
+    <div class="latest-top">
+      <div class="latest-hed">Today's Headlines</div>
+      <div class="latest-meta">
+        Auto-refreshes every 60s
+        <button class="refresh-btn" onclick="fetchNews()">↻ Refresh</button>
+        <div class="countdown" id="countdown">Next: 60s</div>
       </div>
     </div>
-
-    <div class="side-col">
-      <div class="col-rule">Operating Procedure</div>
-      <div class="how-box">
-        <div class="step">
-          <div class="step-num">I</div>
-          <div class="step-body"><strong>Text Cleansing</strong><span>Removes noise, stopwords & punctuation. Applies lemmatization.</span></div>
-        </div>
-        <div class="step">
-          <div class="step-num">II</div>
-          <div class="step-body"><strong>TF-IDF Encoding</strong><span>Converts words into numerical vectors for analysis.</span></div>
-        </div>
-        <div class="step">
-          <div class="step-num">III</div>
-          <div class="step-body"><strong>ML Classification</strong><span>Logistic Regression renders its verdict.</span></div>
-        </div>
-        <div class="step">
-          <div class="step-num">IV</div>
-          <div class="step-body"><strong>Confidence Report</strong><span>Probability scores issued for Fake vs. Real.</span></div>
-        </div>
-      </div>
-
-      <div class="col-rule">Intelligence Report</div>
-      <div class="stats-box">
-        <div class="stats-title">Model Performance</div>
-        <div class="stats-grid">
-          <div class="stat-cell"><div class="stat-val">99%</div><div class="stat-lbl">Accuracy</div></div>
-          <div class="stat-cell"><div class="stat-val">0.99</div><div class="stat-lbl">F1-Score</div></div>
-          <div class="stat-cell"><div class="stat-val">0.99</div><div class="stat-lbl">Precision</div></div>
-          <div class="stat-cell"><div class="stat-val">0.99</div><div class="stat-lbl">Recall</div></div>
-        </div>
-      </div>
-
-      <div class="classified">
-        <div class="classified-title">— Notice —</div>
-        <p>This analytical engine was trained upon forty-four thousand dispatches from the Reuters wire and PolitiFact bureau. Results rendered instantaneously upon submission.</p>
-      </div>
+    <div id="news-container">
+      <div class="news-loading">Fetching dispatches<span class="dots"></span></div>
     </div>
   </div>
 
   <div class="footer">
-    <span>The TruthScan Gazette &nbsp;·&nbsp; Est. 2024</span>
-    <span>Flask · scikit-learn · NLTK</span>
+    <span>FakeXpose &nbsp;·&nbsp; Est. 2024</span>
+    <span>Flask · scikit-learn · NewsAPI</span>
     <span>All Rights Reserved</span>
   </div>
 
 </div>
-
 <script>
-  const API_BASE = "http://localhost:5000";
-  let activeTab = "text";
+  const API="http://localhost:5000";
+  let activeTab="text",countdown=60,timer;
 
-  document.getElementById('current-date').textContent =
-    new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
+  document.getElementById('current-date').textContent=
+    new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).toUpperCase();
 
-  function switchTab(tab, btn) {
-    activeTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  function switchTab(tab,btn){
+    activeTab=tab;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('tab-' + tab).classList.add('active');
-    resetResult();
+    document.getElementById('tab-'+tab).classList.add('active');
+    reset();
   }
 
-  function resetResult() {
-    document.getElementById('result-card').style.display = 'none';
-    document.getElementById('error-msg').style.display = 'none';
-    document.getElementById('loading').style.display = 'none';
+  function reset(){
+    document.getElementById('result').style.display='none';
+    document.getElementById('error-box').style.display='none';
+    document.getElementById('loading').style.display='none';
   }
 
-  async function analyze() {
-    resetResult();
-    const btn = document.getElementById('analyze-btn');
-    btn.disabled = true;
-    let endpoint, body;
-
-    if (activeTab === 'text') {
-      const text = document.getElementById('news-text').value.trim();
-      if (!text) { showError("The submission is empty. Please provide article text."); btn.disabled = false; return; }
-      endpoint = '/predict'; body = { text };
+  async function analyze(){
+    reset();
+    const btn=document.getElementById('analyze-btn');
+    btn.disabled=true;
+    let endpoint,body;
+    if(activeTab==='text'){
+      const text=document.getElementById('news-text').value.trim();
+      if(!text){showErr("Please paste some text first.");btn.disabled=false;return;}
+      endpoint='/predict';body={text};
     } else {
-      const url = document.getElementById('news-url').value.trim();
-      if (!url) { showError("No URL provided. Please submit a valid address."); btn.disabled = false; return; }
-      endpoint = '/predict-url'; body = { url };
+      const url=document.getElementById('news-url').value.trim();
+      if(!url){showErr("Please enter a URL.");btn.disabled=false;return;}
+      endpoint='/predict-url';body={url};
     }
-
-    document.getElementById('loading').style.display = 'block';
-
-    try {
-      const res = await fetch(API_BASE + endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      document.getElementById('loading').style.display = 'none';
-      if (!res.ok || data.error) showError(data.error || "The engine encountered an error.");
-      else showResult(data);
-    } catch (err) {
-      document.getElementById('loading').style.display = 'none';
-      showError("Cannot reach the analysis bureau. Ensure Flask is running on port 5000.");
+    document.getElementById('loading').style.display='block';
+    try{
+      const res=await fetch(API+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data=await res.json();
+      document.getElementById('loading').style.display='none';
+      data.error?showErr(data.error):showResult(data);
+    } catch{
+      document.getElementById('loading').style.display='none';
+      showErr("Cannot reach Flask. Make sure it's running on port 5000.");
     }
-    btn.disabled = false;
+    btn.disabled=false;
   }
 
-  function showError(msg) {
-    const el = document.getElementById('error-msg');
-    el.textContent = '⚠ ' + msg;
-    el.style.display = 'block';
+  function showErr(msg){
+    const el=document.getElementById('error-box');
+    el.textContent='⚠ '+msg;el.style.display='block';
   }
 
-  function showResult(data) {
-    const isFake = data.prediction === "Fake";
-    document.getElementById('stamp').className = 'stamp ' + (isFake ? 'fake' : 'real');
-    document.getElementById('stamp-word').textContent = isFake ? 'FAKE' : 'REAL';
-    document.getElementById('confidence-num').textContent = data.confidence + '%';
-    document.getElementById('verdict-desc').textContent = isFake
-      ? 'Our engine has determined this article exhibits strong indicators of fabrication.'
-      : 'Our engine has determined this article bears the hallmarks of genuine reporting.';
+  function showResult(d){
+    const isFake=d.prediction==="Fake";
+    document.getElementById('stamp').className='stamp '+(isFake?'fake':'real');
+    document.getElementById('stamp-word').textContent=isFake?'FAKE':'REAL';
+    document.getElementById('verdict-pct').textContent=d.confidence+'%';
+    document.getElementById('verdict-desc').textContent=isFake
+      ?'This article exhibits strong indicators of fabrication.'
+      :'This article bears the hallmarks of genuine reporting.';
+    setTimeout(()=>{
+      document.getElementById('fake-bar').style.width=d.fake_probability+'%';
+      document.getElementById('real-bar').style.width=d.real_probability+'%';
+    },80);
+    document.getElementById('fake-pct').textContent=d.fake_probability+'%';
+    document.getElementById('real-pct').textContent=d.real_probability+'%';
+    const rv=d.real_time_verdict||'UNAVAILABLE';
+    const srcs=d.credible_sources||[];
+    const map={
+      'LIKELY REAL':      {cls:'found',tag:'✓ Verified',  strong:'✅  Found in Credible Sources',sub:srcs.length+' credible outlet(s) reporting this.'},
+      'UNVERIFIED':       {cls:'warn', tag:'? Unverified', strong:'⚠️  Limited Coverage',          sub:'Only 1 source found. Treat with caution.'},
+      'NOT FOUND IN NEWS':{cls:'bad',  tag:'✗ Not Found', strong:'🚨  Not Found Anywhere',         sub:'No credible sources reporting this.'},
+    };
+    const m=map[rv]||{cls:'',tag:'Unavailable',strong:'📡  Search Unavailable',sub:'Could not connect.'};
+    const tag=document.getElementById('rt-tag');
+    tag.className='rt-tag '+m.cls;tag.textContent=m.tag;
+    document.getElementById('rt-verdict').className='rt-verdict '+m.cls;
+    document.getElementById('rt-strong').textContent=m.strong;
+    document.getElementById('rt-span').textContent=m.sub;
+    const sl=document.getElementById('src-list');
+    sl.innerHTML=srcs.length
+      ?srcs.map(s=>`<div class="src-item"><div class="src-title">${s.title}</div><div class="src-url">${s.source}</div></div>`).join('')
+      :'<div class="src-empty">No credible sources found.</div>';
+    document.getElementById('result').style.display='block';
+  }
 
-    setTimeout(() => {
-      document.getElementById('fake-bar').style.width = data.fake_probability + '%';
-      document.getElementById('real-bar').style.width = data.real_probability + '%';
-    }, 100);
-
-    document.getElementById('fake-pct').textContent = data.fake_probability + '%';
-    document.getElementById('real-pct').textContent = data.real_probability + '%';
-
-    if (data.scraped_text_preview) {
-      document.getElementById('scrape-text').textContent = '"' + data.scraped_text_preview + '"';
-      document.getElementById('scrape-box').style.display = 'block';
-    } else {
-      document.getElementById('scrape-box').style.display = 'none';
+  async function fetchNews(){
+    const c=document.getElementById('news-container');
+    c.innerHTML='<div class="news-loading">Fetching dispatches<span class="dots"></span></div>';
+    resetTimer();
+    try{
+      const res=await fetch(API+'/latest-news');
+      const data=await res.json();
+      if(data.error){c.innerHTML=`<div class="news-err">⚠ ${data.error}</div>`;return;}
+      renderNews(data.articles||[]);
+    } catch{
+      c.innerHTML='<div class="news-err">⚠ Cannot reach Flask backend.</div>';
     }
-
-    document.getElementById('result-card').style.display = 'block';
   }
+
+  function renderNews(articles){
+    const c=document.getElementById('news-container');
+    if(!articles.length){c.innerHTML='<div class="news-err">No articles returned.</div>';return;}
+    const list=document.createElement('div');
+    list.className='news-list';
+    articles.forEach(a=>{
+      const isFake=a.prediction==="Fake";
+      const pub=a.published?new Date(a.published).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'';
+      const item=document.createElement('div');
+      item.className='news-item';
+      item.innerHTML=`
+        <div><div class="news-badge ${isFake?'fake':'real'}">${a.prediction}</div></div>
+        <div>
+          <div class="news-headline">${a.headline}</div>
+          <div class="news-source">${a.source}${pub?' · '+pub:''}</div>
+        </div>
+        <div class="news-right">
+          <div class="news-conf ${isFake?'fake':'real'}">${a.confidence}%</div>
+          <div class="news-conf-label">confidence</div>
+          ${a.url?`<a class="news-link" href="${a.url}" target="_blank">Read →</a>`:''}
+        </div>`;
+      list.appendChild(item);
+    });
+    c.innerHTML='';
+    c.appendChild(list);
+  }
+
+  function resetTimer(){
+    clearInterval(timer);
+    countdown=60;
+    document.getElementById('countdown').textContent='Next: 60s';
+    timer=setInterval(()=>{
+      countdown--;
+      document.getElementById('countdown').textContent=`Next: ${countdown}s`;
+      if(countdown<=0) fetchNews();
+    },1000);
+  }
+
+  fetchNews();
+  resetTimer();
 </script>
 </body>
 </html>
