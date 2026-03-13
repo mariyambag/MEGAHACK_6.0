@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TruthScan — Fake News Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Rye&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --paper: #f2e8c9;
+      --paper-dark: #e8d9a8;
+      --paper-aged: #d4c48a;
+      --ink: #1a1208;
+      --ink-faded: #3d2e12;
+      --ink-light: #6b5230;
+      --red-stamp: #8b1a0a;
+      --green-stamp: #1a4d2e;
+      --border: #a89060;
+      --shadow: rgba(26,18,8,0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #c8b882;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, #b8a870 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #d4c488 0%, transparent 50%);
+      font-family: 'Courier Prime', 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 30px 20px 60px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .newspaper {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--paper);
+      box-shadow:
+        0 2px 4px var(--shadow),
+        0 8px 24px rgba(26,18,8,0.25),
+        0 20px 60px rgba(26,18,8,0.2),
+        inset 0 0 80px rgba(168,144,96,0.1);
+      border: 1px solid var(--paper-aged);
+    }
+
+    /* HEADER */
+    .header {
+      padding: 20px 40px 0;
+      border-bottom: 4px double var(--ink);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+    }
+
+    .edition-box {
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      font-size: 9px;
+    }
+
+    .masthead-wrap { text-align: center; padding-bottom: 14px; }
+
+    .paper-name {
+      font-family: 'Special Elite', cursive;
+      font-size: clamp(2.6rem, 7vw, 5.2rem);
+      color: var(--ink);
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-shadow: 2px 2px 0 rgba(26,18,8,0.08);
+    }
+
+    .paper-subtitle {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 5px 0;
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+
+    .header-stats {
+      display: flex;
+      justify-content: center;
+      padding-top: 10px;
+    }
+
+    .hstat {
+      padding: 4px 20px;
+      border-right: 1px solid var(--border);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+    }
+    .hstat:last-child { border-right: none; }
+    .hstat strong { color: var(--ink); }
+
+    /* TICKER */
+    .ticker-strip {
+      background: var(--ink);
+      color: var(--paper);
+      overflow: hidden;
+      padding: 7px 0;
+    }
+
+    .ticker-track {
+      display: flex;
+      animation: scroll 28s linear infinite;
+      white-space: nowrap;
+    }
+
+    .tick {
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 0 32px;
+      opacity: 0.85;
+    }
+
+    .tick-sep { color: var(--paper-aged); margin: 0 4px; }
+
+    @keyframes scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* CONTENT */
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 255px;
+      gap: 0;
+      padding: 32px 40px 40px;
+    }
+
+    .main-col { padding-right: 30px; border-right: 1px solid var(--border); }
+    .side-col { padding-left: 26px; }
+
+    .col-rule {
+      font-size: 8.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      border-top: 2px solid var(--ink);
+      padding-top: 8px;
+      margin-bottom: 16px;
+    }
+
+    .article-hed {
+      font-family: 'Special Elite', cursive;
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      line-height: 1.15;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .article-deck {
+      font-size: 12px;
+      color: var(--ink-light);
+      font-style: italic;
+      margin-bottom: 20px;
+      line-height: 1.5;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--ink);
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      font-family: 'Courier Prime', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 8px 18px;
+      cursor: pointer;
+      color: var(--ink-light);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    textarea, input[type="url"] {
+      width: 100%;
+      background: #fdf6e0;
+      border: 1.5px solid var(--border);
+      color: var(--ink);
+      font-family: 'Courier Prime', monospace;
+      font-size: 13px;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.6;
+      box-shadow: inset 1px 1px 4px rgba(168,144,96,0.2);
+    }
+
+    textarea { min-height: 160px; resize: vertical; }
+    textarea:focus, input[type="url"]:focus { border-color: var(--ink); }
+    textarea::placeholder, input::placeholder { color: #b8a070; font-style: italic; }
+
+    .analyze-btn {
+      width: 100%;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      font-family: 'Special Elite', cursive;
+      font-size: 15px;
+      letter-spacing: 0.12em;
+      padding: 14px 28px;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      position: relative;
+    }
+
+    .analyze-btn::before {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border: 1px solid rgba(242,232,201,0.15);
+      pointer-events: none;
+    }
+
+    .analyze-btn:hover { background: var(--ink-faded); }
+    .analyze-btn:active { transform: scale(0.99); }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      display: none;
+      border-left: 3px solid var(--red-stamp);
+      padding: 10px 14px;
+      font-size: 11px;
+      color: var(--red-stamp);
+      margin-top: 12px;
+      background: rgba(139,26,10,0.05);
+      font-style: italic;
+    }
+
+    /* LOADING */
+    .loading {
+      display: none;
+      padding: 30px 0;
+      text-align: center;
+    }
+
+    .loading-text {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+    }
+
+    .dots::after {
+      content: '';
+      animation: dots 1.5s infinite;
+    }
+
+    @keyframes dots {
+      0%   { content: '.'; }
+      33%  { content: '..'; }
+      66%  { content: '...'; }
+      100% { content: ''; }
+    }
+
+    .type-line {
+      width: 80%;
+      height: 1px;
+      background: var(--border);
+      margin: 14px auto 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .type-line::after {
+      content: '';
+      position: absolute;
+      left: -30%;
+      width: 30%;
+      height: 100%;
+      background: var(--ink);
+      animation: tslide 1.2s ease-in-out infinite;
+    }
+
+    @keyframes tslide {
+      from { left: -30%; }
+      to { left: 130%; }
+    }
+
+    /* RESULT */
+    .result-card {
+      display: none;
+      margin-top: 24px;
+      animation: fadeUp 0.4s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stamp-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      border: 1.5px solid var(--border);
+      padding: 20px;
+      background: #fdf6e0;
+    }
+
+    .stamp {
+      flex-shrink: 0;
+      width: 108px;
+      height: 108px;
+      border: 4px solid;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transform: rotate(-7deg);
+      opacity: 0.9;
+      position: relative;
+    }
+
+    .stamp.fake { border-color: var(--red-stamp); color: var(--red-stamp); }
+    .stamp.real { border-color: var(--green-stamp); color: var(--green-stamp); }
+
+    .stamp::before {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border: 1px solid currentColor;
+      opacity: 0.35;
+    }
+
+    .stamp-word {
+      font-family: 'Special Elite', cursive;
+      font-size: 1.55rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .stamp-sub {
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 4px;
+      opacity: 0.75;
+    }
+
+    .stamp-detail { flex: 1; }
+
+    .stamp-confidence {
+      font-family: 'Special Elite', cursive;
+      font-size: 2rem;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .stamp-conf-label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-bottom: 12px;
+    }
+
+    .verdict-desc {
+      font-size: 11px;
+      color: var(--ink-light);
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    .prob-section {
+      border: 1.5px solid var(--border);
+      border-top: none;
+      padding: 16px 20px;
+      background: var(--paper);
+    }
+
+    .prob-row { margin-bottom: 14px; }
+    .prob-row:last-child { margin-bottom: 0; }
+
+    .prob-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-bottom: 6px;
+    }
+
+    .prob-header span:last-child { color: var(--ink); font-weight: 700; }
+
+    .prob-track {
+      height: 5px;
+      background: var(--paper-dark);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .prob-fill {
+      height: 100%;
+      transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .prob-fill.fake { background: var(--red-stamp); }
+    .prob-fill.real { background: var(--green-stamp); }
+
+    .scrape-box {
+      display: none;
+      border: 1.5px solid var(--border);
+      border-top: 1px dashed var(--border);
+      padding: 14px 20px;
+      background: var(--paper-dark);
+    }
+
+    .scrape-label {
+      font-size: 8px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-bottom: 7px;
+    }
+
+    .scrape-text {
+      font-size: 11px;
+      font-style: italic;
+      color: var(--ink-light);
+      line-height: 1.6;
+    }
+
+    /* SIDEBAR */
+    .how-box {
+      border: 1px solid var(--border);
+      padding: 16px;
+      background: #fdf6e0;
+      margin-bottom: 22px;
+    }
+
+    .step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+    .step:last-child { margin-bottom: 0; }
+
+    .step-num {
+      font-family: 'Special Elite', cursive;
+      font-size: 1.3rem;
+      color: var(--red-stamp);
+      line-height: 1;
+      min-width: 20px;
+    }
+
+    .step-body strong {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 1px;
+      letter-spacing: 0.04em;
+    }
+
+    .step-body span {
+      font-size: 10px;
+      color: var(--ink-light);
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .stats-box {
+      border: 2px solid var(--ink);
+      overflow: hidden;
+    }
+
+    .stats-title {
+      background: var(--ink);
+      color: var(--paper);
+      font-family: 'Special Elite', cursive;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-align: center;
+      padding: 8px;
+      text-transform: uppercase;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .stat-cell {
+      padding: 14px 8px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-cell:nth-child(even) { border-right: none; }
+    .stat-cell:nth-child(3), .stat-cell:nth-child(4) { border-bottom: none; }
+
+    .stat-val {
+      font-family: 'Special Elite', cursive;
+      font-size: 1.5rem;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .stat-lbl {
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-top: 3px;
+    }
+
+    .classified {
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      margin-top: 22px;
+      text-align: center;
+      background: var(--paper-dark);
+    }
+
+    .classified-title {
+      font-family: 'Rye', cursive;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .classified p {
+      font-size: 10px;
+      color: var(--ink-light);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    .footer {
+      border-top: 3px double var(--ink);
+      padding: 14px 40px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+    }
+
+    @media (max-width: 680px) {
+      .content { grid-template-columns: 1fr; }
+      .main-col { padding-right: 0; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 28px; margin-bottom: 28px; }
+      .side-col { padding-left: 0; }
+      .header { padding: 16px 20px 0; }
+      .content { padding: 24px 20px 32px; }
+      .footer { padding: 12px 20px; flex-direction: column; gap: 4px; text-align: center; }
+      .header-top { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="newspaper">
+
+  <div class="header">
+    <div class="header-top">
+      <span>Est. 2024 &nbsp;·&nbsp; Vol. I &nbsp;·&nbsp; No. 1</span>
+      <div class="edition-box">Special ML Edition</div>
+      <span id="current-date"></span>
+    </div>
+    <div class="masthead-wrap">
+      <div class="paper-name">The TruthScan Gazette</div>
+      <div class="paper-subtitle">All The News That's Fit To Verify &nbsp;·&nbsp; Powered by Machine Learning</div>
+    </div>
+    <div class="header-stats">
+      <div class="hstat">Accuracy <strong>99%</strong></div>
+      <div class="hstat">Articles Trained <strong>44,000+</strong></div>
+      <div class="hstat">Algorithm <strong>Log. Regression</strong></div>
+      <div class="hstat">Features <strong>TF-IDF</strong></div>
+    </div>
+  </div>
+
+  <div class="ticker-strip">
+    <div class="ticker-track">
+      <span class="tick">Breaking <span class="tick-sep">✦</span> AI Detects Fake News With 99% Accuracy</span>
+      <span class="tick">ML Model Trained on 44,000 Articles <span class="tick-sep">✦</span> NLP Preprocessing Pipeline Active</span>
+      <span class="tick">TF-IDF Vectorization <span class="tick-sep">✦</span> Logistic Regression Classifier</span>
+      <span class="tick">Submit Text Or URL For Instant Verdict <span class="tick-sep">✦</span> Results Rendered Forthwith</span>
+      <span class="tick">Breaking <span class="tick-sep">✦</span> AI Detects Fake News With 99% Accuracy</span>
+      <span class="tick">ML Model Trained on 44,000 Articles <span class="tick-sep">✦</span> NLP Preprocessing Pipeline Active</span>
+      <span class="tick">TF-IDF Vectorization <span class="tick-sep">✦</span> Logistic Regression Classifier</span>
+      <span class="tick">Submit Text Or URL For Instant Verdict <span class="tick-sep">✦</span> Results Rendered Forthwith</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="main-col">
+      <div class="col-rule">Analysis Desk — Submit Dispatch For Verification</div>
+      <h1 class="article-hed">Is This Headline Gospel Truth<br/>Or Pure Fiction?</h1>
+      <p class="article-deck">Our mechanical intelligence shall examine the submitted article and render its verdict forthwith — complete with a confidence assessment fit for the front page.</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('text', this)">⌨ Paste Article Text</button>
+        <button class="tab-btn" onclick="switchTab('url', this)">⚓ Submit URL</button>
+      </div>
+
+      <div class="tab-content active" id="tab-text">
+        <textarea id="news-text" placeholder="Type or paste your news article here...&#10;&#10;&quot;Scientists Discover Moon Is Made Of Cheese, Congress Demands Full Investigation...&quot;"></textarea>
+      </div>
+      <div class="tab-content" id="tab-url">
+        <input type="url" id="news-url" placeholder="https://www.example.com/news-article"/>
+      </div>
+
+      <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+        ⚙ Submit For Analysis
+      </button>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <div class="loading" id="loading">
+        <div class="loading-text">Consulting the analytical engine<span class="dots"></span></div>
+        <div class="type-line"></div>
+      </div>
+
+      <div class="result-card" id="result-card">
+        <div class="stamp-wrap">
+          <div class="stamp" id="stamp">
+            <div class="stamp-word" id="stamp-word">—</div>
+            <div class="stamp-sub">News</div>
+          </div>
+          <div class="stamp-detail">
+            <div class="stamp-confidence" id="confidence-num">—</div>
+            <div class="stamp-conf-label">Confidence Score</div>
+            <div class="verdict-desc" id="verdict-desc"></div>
+          </div>
+        </div>
+        <div class="prob-section">
+          <div class="prob-row">
+            <div class="prob-header">
+              <span>Probability: Fabricated</span>
+              <span id="fake-pct">0%</span>
+            </div>
+            <div class="prob-track">
+              <div class="prob-fill fake" id="fake-bar" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="prob-row">
+            <div class="prob-header">
+              <span>Probability: Genuine</span>
+              <span id="real-pct">0%</span>
+            </div>
+            <div class="prob-track">
+              <div class="prob-fill real" id="real-bar" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="scrape-box" id="scrape-box">
+          <div class="scrape-label">— Extracted Dispatch —</div>
+          <div class="scrape-text" id="scrape-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col">
+      <div class="col-rule">Operating Procedure</div>
+      <div class="how-box">
+        <div class="step">
+          <div class="step-num">I</div>
+          <div class="step-body"><strong>Text Cleansing</strong><span>Removes noise, stopwords & punctuation. Applies lemmatization.</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">II</div>
+          <div class="step-body"><strong>TF-IDF Encoding</strong><span>Converts words into numerical vectors for analysis.</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">III</div>
+          <div class="step-body"><strong>ML Classification</strong><span>Logistic Regression renders its verdict.</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">IV</div>
+          <div class="step-body"><strong>Confidence Report</strong><span>Probability scores issued for Fake vs. Real.</span></div>
+        </div>
+      </div>
+
+      <div class="col-rule">Intelligence Report</div>
+      <div class="stats-box">
+        <div class="stats-title">Model Performance</div>
+        <div class="stats-grid">
+          <div class="stat-cell"><div class="stat-val">99%</div><div class="stat-lbl">Accuracy</div></div>
+          <div class="stat-cell"><div class="stat-val">0.99</div><div class="stat-lbl">F1-Score</div></div>
+          <div class="stat-cell"><div class="stat-val">0.99</div><div class="stat-lbl">Precision</div></div>
+          <div class="stat-cell"><div class="stat-val">0.99</div><div class="stat-lbl">Recall</div></div>
+        </div>
+      </div>
+
+      <div class="classified">
+        <div class="classified-title">— Notice —</div>
+        <p>This analytical engine was trained upon forty-four thousand dispatches from the Reuters wire and PolitiFact bureau. Results rendered instantaneously upon submission.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>The TruthScan Gazette &nbsp;·&nbsp; Est. 2024</span>
+    <span>Flask · scikit-learn · NLTK</span>
+    <span>All Rights Reserved</span>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = "http://localhost:5000";
+  let activeTab = "text";
+
+  document.getElementById('current-date').textContent =
+    new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
+
+  function switchTab(tab, btn) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    resetResult();
+  }
+
+  function resetResult() {
+    document.getElementById('result-card').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+  }
+
+  async function analyze() {
+    resetResult();
+    const btn = document.getElementById('analyze-btn');
+    btn.disabled = true;
+    let endpoint, body;
+
+    if (activeTab === 'text') {
+      const text = document.getElementById('news-text').value.trim();
+      if (!text) { showError("The submission is empty. Please provide article text."); btn.disabled = false; return; }
+      endpoint = '/predict'; body = { text };
+    } else {
+      const url = document.getElementById('news-url').value.trim();
+      if (!url) { showError("No URL provided. Please submit a valid address."); btn.disabled = false; return; }
+      endpoint = '/predict-url'; body = { url };
+    }
+
+    document.getElementById('loading').style.display = 'block';
+
+    try {
+      const res = await fetch(API_BASE + endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      document.getElementById('loading').style.display = 'none';
+      if (!res.ok || data.error) showError(data.error || "The engine encountered an error.");
+      else showResult(data);
+    } catch (err) {
+      document.getElementById('loading').style.display = 'none';
+      showError("Cannot reach the analysis bureau. Ensure Flask is running on port 5000.");
+    }
+    btn.disabled = false;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+  }
+
+  function showResult(data) {
+    const isFake = data.prediction === "Fake";
+    document.getElementById('stamp').className = 'stamp ' + (isFake ? 'fake' : 'real');
+    document.getElementById('stamp-word').textContent = isFake ? 'FAKE' : 'REAL';
+    document.getElementById('confidence-num').textContent = data.confidence + '%';
+    document.getElementById('verdict-desc').textContent = isFake
+      ? 'Our engine has determined this article exhibits strong indicators of fabrication.'
+      : 'Our engine has determined this article bears the hallmarks of genuine reporting.';
+
+    setTimeout(() => {
+      document.getElementById('fake-bar').style.width = data.fake_probability + '%';
+      document.getElementById('real-bar').style.width = data.real_probability + '%';
+    }, 100);
+
+    document.getElementById('fake-pct').textContent = data.fake_probability + '%';
+    document.getElementById('real-pct').textContent = data.real_probability + '%';
+
+    if (data.scraped_text_preview) {
+      document.getElementById('scrape-text').textContent = '"' + data.scraped_text_preview + '"';
+      document.getElementById('scrape-box').style.display = 'block';
+    } else {
+      document.getElementById('scrape-box').style.display = 'none';
+    }
+
+    document.getElementById('result-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>
